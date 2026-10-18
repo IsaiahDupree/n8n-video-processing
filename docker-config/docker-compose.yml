@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  n8n:
+    build:
+      context: .
+      dockerfile: n8n.Dockerfile
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - NODE_FUNCTION_ALLOW_EXTERNAL=*
+      - NODE_FUNCTION_ALLOW_BUILTIN=fs,path,os,child_process,util,crypto,stream,buffer,events,url,querystring,string_decoder,punycode,http,https,net,dgram,dns,tls,zlib,readline,assert,constants,timers,tty,domain,process
+      - NODE_OPTIONS=--max-old-space-size=8192
+      - EXECUTIONS_TIMEOUT=3600000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - N8N_LOG_LEVEL=debug
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_OAUTH2_CALLBACK_URL=http://localhost:5678/rest/oauth2-credential/callback
+      - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+      - N8N_BINARY_DATA_STORAGE_PATH=/home/node/.n8n/binaryData
+      - N8N_PAYLOAD_SIZE_MAX=1024
+    volumes:
+      - ./data:/home/node/.n8n
+      - "//c/Users/Isaia/Documents/Coding/N8N/shared/videos:/home/node/shared/videos"
+      - ./custom-nodes:/home/node/custom-nodes
+      - ./workflows:/home/node/workflows
+    depends_on:
+      - postgres
+    networks:
+      - n8n-network
+
+  postgres:
+    image: postgres:14
+    restart: always
+    environment:
+      - POSTGRES_USER=n8n
+      - POSTGRES_PASSWORD=n8n
+      - POSTGRES_DB=n8n
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - n8n-network
+
+volumes:
+  postgres_data:
+
+networks:
+  n8n-network:
+    driver: bridge
